@@ -1,0 +1,73 @@
+name: Build firmware and publish release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Configure cores
+        run: |
+          arduino-cli config init --overwrite
+          arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+          arduino-cli core install esp8266:esp8266
+
+      - name: Install libraries
+        run: |
+          arduino-cli lib install "Adafruit GFX Library"
+          arduino-cli lib install "RGB matrix Panel"
+          arduino-cli lib install "U8g2_for_Adafruit_GFX"
+
+      - name: Prepare sketches
+        run: |
+          mkdir -p build/sketches/mega build/sketches/esp8266
+          cp firmware/mega/anenji_rgb_display.ino build/sketches/mega/mega.ino
+          cp firmware/esp8266/anenji_esp8266_bridge_stage1_grid_present.ino build/sketches/esp8266/esp8266.ino
+
+      - name: Compile Mega 2560
+        run: |
+          mkdir -p build/out/mega
+          arduino-cli compile --fqbn arduino:avr:mega --output-dir build/out/mega build/sketches/mega
+
+      - name: Compile ESP8266
+        run: |
+          mkdir -p build/out/esp8266
+          arduino-cli compile --fqbn esp8266:esp8266:generic --output-dir build/out/esp8266 build/sketches/esp8266
+
+      - name: Package firmware
+        run: |
+          mkdir -p dist
+          cp build/out/mega/*.hex dist/anenji-mega2560.hex
+          cp build/out/esp8266/*.bin dist/anenji-esp8266.bin
+          sha256sum dist/* > dist/SHA256SUMS.txt
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: anenji-firmware
+          path: dist/
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/anenji-mega2560.hex
+            dist/anenji-esp8266.bin
+            dist/SHA256SUMS.txt
+          generate_release_notes: true
