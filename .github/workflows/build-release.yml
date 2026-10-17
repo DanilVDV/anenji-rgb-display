@@ -54,7 +54,10 @@ jobs:
       - name: Package firmware
         run: |
           mkdir -p dist
-          cp build/out/mega/*.hex dist/anenji-mega2560.hex
+          find build/out/mega -maxdepth 1 -name "*.hex" -print
+          mega_hex=$(find build/out/mega -maxdepth 1 -name "*.hex" ! -name "*with_bootloader*" -print -quit)
+          test -n "$mega_hex"
+          cp "$mega_hex" dist/anenji-mega2560.hex
           cp build/out/esp8266/*.bin dist/anenji-esp8266.bin
           sha256sum dist/* > dist/SHA256SUMS.txt
 
