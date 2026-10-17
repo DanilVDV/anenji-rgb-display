@@ -1,0 +1,6 @@
+secrets.h
+config.local.h
+.env
+*.hex
+*.bin
+__pycache__/
