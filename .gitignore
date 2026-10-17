@@ -1,0 +1,13 @@
+# Local secrets and generated artifacts
+secrets.h
+config.local.h
+.env
+.env.*
+!.env.example
+*.log
+*.bin
+*.elf
+*.hex
+__pycache__/
+*.pyc
+.DS_Store
