@@ -3,6 +3,8 @@ name: Build firmware and publish release
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
 
